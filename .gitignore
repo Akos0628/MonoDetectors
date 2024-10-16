@@ -1,0 +1,14 @@
+.idea/
+.vscode/
+
+# my data 
+/zdata/
+
+# output dir
+/MonoLSS/
+/MonoDTR/
+**/__pycache__/
+
+*.so
+*.npy
+*.pth
