@@ -96,6 +96,11 @@ class Anchors(nn.Module):
             #P2 = calibs.P2 #[3, 4]
             #P2 = np.stack([calib for calib in calibs]) #[B, 3, 4]
             P2 = calibs #[B, 3, 4]
+            if self.P2 is not None and torch.all(self.P2 == P2) and self.P2.shape == P2.shape:
+                if self.readConfigFile:
+                    return self.anchors, self.useful_mask, self.anchor_mean_std
+                else:
+                    return self.anchors, self.useful_mask
 
             self.P2 = P2
             fy = P2[:, 1:2, 1:2] #[B,1, 1]

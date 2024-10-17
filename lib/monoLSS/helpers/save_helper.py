@@ -1,9 +1,8 @@
 import os
 import torch
 
-def load_checkpoint(model, optimizer, filename, logger, map_location):
+def load_checkpoint(model, optimizer, filename, map_location):
     if os.path.isfile(filename):
-        logger.info("==> Loading from checkpoint '{}'".format(filename))
         checkpoint = torch.load(filename, map_location=map_location, weights_only = False)
         epoch = checkpoint.get('epoch', -1)
         if model is not None and checkpoint.get('model_state', None) is not None:
@@ -15,8 +14,6 @@ def load_checkpoint(model, optimizer, filename, logger, map_location):
                     if isinstance(v, torch.Tensor):
                         state[k] = v.to(map_location)
         # epoch = 5
-
-        logger.info("==> Done")
     else:
         raise FileNotFoundError
     return epoch

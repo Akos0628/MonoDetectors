@@ -7,17 +7,17 @@ from lib.monoDTR.visualDet3D.networks.utils.utils import BackProjection
 from lib.monoDTR.visualDet3D.networks.utils.utils import BBox3dProjector
 
 class Printer(object):
-    def __init__(self, cfg, model, logger):
+    def __init__(self, cfg, model):
         self.cfg = cfg
+        self.treshold = cfg['treshold']
+
         self.model = model
         self.model.cuda()
 
-        self.logger = logger
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         if self.cfg.get('resume_model', None):
-            print(cfg['resume_model'])
-            state_dict = torch.load(cfg['resume_model'], map_location='cuda:0', weights_only=False)
+            state_dict = torch.load(self.cfg['resume_model'], map_location='cuda:0', weights_only=False)
             new_dict = state_dict.copy()
             self.model.load_state_dict(new_dict, strict=False)
         
@@ -26,7 +26,7 @@ class Printer(object):
         self.backprojector = BackProjection().cuda()
         self.projector = BBox3dProjector().cuda()
 
-    def print(self, idx, img, calibs, resolution, downsample, mean, std, cls_mean_size):
+    def print(self, img, calibs):
         torch.set_grad_enabled(False)
 
         original_P2 = calibs[0].P2
@@ -39,7 +39,7 @@ class Printer(object):
                 torch.tensor(np.array([P2])).float().cuda().float()
             ]
         )
-        obj_types = [self.cfg['obj_types'][i.item()] for i in obj_index]
+        obj_types = [self.cfg['head']['cls'][i.item()] for i in obj_index]
 
         bbox_2d = bbox[:, 0:4]
         if bbox.shape[1] > 4: # run 3D
@@ -59,7 +59,7 @@ class Printer(object):
             bbox_2d[:, 0:4:2] *= scale_x
             bbox_2d[:, 1:4:2] *= scale_y
 
-            return toPredictions(scores, bbox_2d, bbox_3d_state_3d, thetas, obj_types)
+            return toPredictions(scores, bbox_2d, bbox_3d_state_3d, thetas, obj_types, self.treshold)
         else:
             print('non 3D')
     
@@ -77,7 +77,7 @@ class Printer(object):
 
         return rgb_images, calib
     
-def toPredictions(scores, bbox_2d, bbox_3d_state_3d, thetas, obj_types, threshold=0.9): 
+def toPredictions(scores, bbox_2d, bbox_3d_state_3d, thetas, obj_types, threshold): 
     scores = scores.detach().cpu().numpy()
     bbox_2d = bbox_2d.detach().cpu().numpy()
     bbox_3d_state_3d = bbox_3d_state_3d.detach().cpu().numpy()
@@ -108,7 +108,6 @@ def toPredictions(scores, bbox_2d, bbox_3d_state_3d, thetas, obj_types, threshol
 
 
 def normalize(left_image, p2, mean=np.array([0.485, 0.456, 0.406]), stds=np.array([0.229, 0.224, 0.225])):
-    left_image = left_image.astype(np.float32)
     left_image /= 255.0
     left_image -= np.tile(mean, int(left_image.shape[2]/mean.shape[0]))
     left_image /= np.tile(stds, int(left_image.shape[2]/stds.shape[0]))

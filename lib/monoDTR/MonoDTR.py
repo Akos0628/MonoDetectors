@@ -5,14 +5,14 @@ from lib.monoDTR.visualDet3D.networks.heads.detection_3d_head import AnchorBased
 from lib.monoDTR.visualDet3D.networks.heads.depth_losses import bin_depths, DepthFocalLoss
 
 class MonoDTR(nn.Module):
-    def __init__(self, network_cfg,dataset_cfg):
+    def __init__(self, network_cfg):
         super(MonoDTR, self).__init__()
 
         # Core
         self.mono_core = MonoDTRCore()
 
         # Head
-        self.bbox_head = AnchorBasedDetection3DHead(network_cfg['head'],dataset_cfg)
+        self.bbox_head = AnchorBasedDetection3DHead(network_cfg['head'])
         self.depth_loss = DepthFocalLoss(96)
 
 

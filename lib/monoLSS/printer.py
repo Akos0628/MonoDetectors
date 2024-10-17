@@ -8,12 +8,11 @@ from lib.monoLSS.helpers.decode_helper import decode_detections
 from lib.common.datasets.kitti_utils import get_affine_transform
 
 class Printer(object):
-    def __init__(self, cfg, model, logger):
+    def __init__(self, cfg, model):
         self.cfg = cfg
         self.model = model
         self.model.eval()
 
-        self.logger = logger
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         if self.cfg.get('resume_model', None):
@@ -21,20 +20,23 @@ class Printer(object):
                 model = self.model,
                 optimizer = None,
                 filename = cfg['resume_model'],
-                logger = self.logger,
                 map_location=self.device
             )
         self.model.to(self.device)
+        self.resolution = np.array(cfg['resolution'])
+        self.cls_mean_size = np.array(cfg['cls_mean_size'])
+        self.downsample = cfg['downsample']
 
-    def print(self, idx, img, calibs, resolution, downsample, mean, std, cls_mean_size):
+
+    def print(self, img, calibs):
         img_size = np.array(img.size)
 
         center = np.array(img_size) / 2
         crop_size = img_size
         coord_range = np.array([center-crop_size/2,center+crop_size/2]).astype(np.float32)
 
-        trans, trans_inv = get_affine_transform(center, crop_size, 0, resolution, inv=1)
-        inputs = img.transform(tuple(resolution.tolist()),
+        trans, trans_inv = get_affine_transform(center, crop_size, 0, self.resolution, inv=1)
+        inputs = img.transform(tuple(self.resolution.tolist()),
                             method=Image.AFFINE,
                             data=tuple(trans_inv.reshape(-1).tolist()),
                             resample=Image.BILINEAR)
@@ -42,8 +44,8 @@ class Printer(object):
         #inputs = (inputs - mean) / std
         inputs = inputs.transpose(2, 0, 1)  # C * H * W
 
-        features_size = resolution // downsample
-        info = {'img_id': np.asarray([idx]),
+        features_size = self.resolution // self.downsample
+        info = {'img_id': np.asarray([0]),
                 'img_size': np.asarray([img_size]),
                 'bbox_downsample_ratio': np.asarray([img_size/features_size])}
         
@@ -63,10 +65,10 @@ class Printer(object):
             dets = dets,
             info = info,
             calibs = calibs,
-            cls_mean_size=cls_mean_size,
+            cls_mean_size=self.cls_mean_size,
             threshold = self.cfg['threshold']
         )
-        dets = dets[idx]
+        dets = dets[0]
         preds = []
         class_map = {
             0: 'Pedestrian', 
@@ -76,8 +78,9 @@ class Printer(object):
 
         for d in dets:
             cls = class_map[d[0]]
-            tmp = [cls, 0.0, 0]
-            tmp.extend(d[1:])
+            values = np.array(d[1:], dtype=np.float32)
+            tmp = [cls, 0, 0]
+            tmp.extend(values)
             preds.append(tmp)
 
         return preds

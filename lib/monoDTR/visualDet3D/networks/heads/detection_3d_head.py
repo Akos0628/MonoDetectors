@@ -12,10 +12,10 @@ from lib.monoDTR.visualDet3D.networks.lib.blocks import AnchorFlatten
 from lib.monoDTR.visualDet3D.networks.lib.ops import ModulatedDeformConvPack
 
 class AnchorBasedDetection3DHead(nn.Module):
-    def __init__(self, head_cfg, dataset_cfg):
+    def __init__(self, head_cfg):
         super(AnchorBasedDetection3DHead, self).__init__()
 
-        num_classes = head_cfg['num_classes'] #3
+        num_classes = len(head_cfg['cls']) #3
         num_regression_loss_terms = head_cfg['num_regression_loss_terms'] #12
         layer_cfg = head_cfg['layer_cfg']
         loss_cfg = head_cfg['loss_cfg']
@@ -29,7 +29,7 @@ class AnchorBasedDetection3DHead(nn.Module):
             anchors_cfg['sizes'],
             anchors_cfg['ratios'],
             anchors_cfg['scales'],
-            dataset_cfg['eval_cls']
+            head_cfg['cls']
         )
         
         self.num_classes = num_classes

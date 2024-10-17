@@ -3,72 +3,50 @@ dataset:
   data_dir: 'zdata/KITTI/object/'
   root_dir: '/home/akos/Documents/code/MonoDetectors'
   label_dir: 'zdata/KITTI/object/training/label_2'
-  eval_cls: ['Car']
-#  eval_cls: ['Car','Pedestrian','Cyclist']
-  batch_size: 1
-  num_workers: 12
-  class_merging: False
-  use_dontcare: False
-  use_3d_center: True
-  writelist: ['Car','Pedestrian','Cyclist']
-  random_flip: 0.5
-  random_crop: 0.5
-  scale: 0.4
-  shift: 0.1
-  drop_last_val: True
-
-trainer:
-  log_dir: 'MonoDTR/logs/'
-  out_dir: 'MonoDTR/output/'
-  # resume_model: 'model.pth'
-
-tester:
-  threshold: 0.2  # confidence filter
-  out_dir: './MonoDTR/testset_out'
-  resume_model: './checkpoints/MonoDTR.pth' # pre-trained model path
 
 model:
   type: 'MonoDTR'
-  MonoDTR:
-    head:
-      num_classes: 1
-      num_regression_loss_terms: 12
-      layer_cfg:
-        num_features_in: 256
-        num_reg_output: 12
-        cls_feature_size: 256
-        reg_feature_size: 256
-      loss_cfg:
-        L1_regression_alpha: 25
-        focal_loss_gamma: 2.0
-        balance_weight: [20.0]
-        regression_weight: [1, 1, 1, 1, 1, 1, 12, 1, 1, 0.5, 0.5, 0.5, 1] #[x, y, w, h, cx, cy, z, sin2a, cos2a, w, h, l]
-      test_cfg:
-        score_thr: 0.75
-        cls_agnostic: False
-        nms_iou_thr: 0.4
-        post_optimization: False
-      anchors_cfg:
-        preprocessed_path: './preprocessed'
-        pyramid_levels: [3]
-        strides: [8]
-        sizes: [24]
-        ratios: [0.5, 1, 2.0]
-        scales: [ # [2 ** (i / 4.0) for i in range(16)]
-          1.0, 1.189207115002721, 
-          1.4142135623730951, 
-          1.681792830507429, 
-          2.0, 
-          2.378414230005442, 
-          2.8284271247461903, 
-          3.363585661014858, 
-          4.0, 
-          4.756828460010884, 
-          5.656854249492381, 
-          6.727171322029716, 
-          8.0, 
-          9.513656920021768, 
-          11.313708498984761, 
-          13.454342644059432
-        ]
+  treshold: 0.8  # confidence filter
+  resume_model: './checkpoints/MonoDTR.pth' # pre-trained model path
+  head:
+    cls: ['Car']
+    num_regression_loss_terms: 12
+    layer_cfg:
+      num_features_in: 256
+      num_reg_output: 12
+      cls_feature_size: 256
+      reg_feature_size: 256
+    loss_cfg:
+      L1_regression_alpha: 25
+      focal_loss_gamma: 2.0
+      balance_weight: [20.0]
+      regression_weight: [1, 1, 1, 1, 1, 1, 12, 1, 1, 0.5, 0.5, 0.5, 1] #[x, y, w, h, cx, cy, z, sin2a, cos2a, w, h, l]
+    test_cfg:
+      score_thr: 0.75
+      cls_agnostic: False
+      nms_iou_thr: 0.4
+      post_optimization: False
+    anchors_cfg:
+      preprocessed_path: './preprocessed'
+      pyramid_levels: [3]
+      strides: [8]
+      sizes: [24]
+      ratios: [0.5, 1, 2.0]
+      scales: [ # [2 ** (i / 4.0) for i in range(16)]
+        1.0, 1.189207115002721, 
+        1.4142135623730951, 
+        1.681792830507429, 
+        2.0, 
+        2.378414230005442, 
+        2.8284271247461903, 
+        3.363585661014858, 
+        4.0, 
+        4.756828460010884, 
+        5.656854249492381, 
+        6.727171322029716, 
+        8.0, 
+        9.513656920021768, 
+        11.313708498984761, 
+        13.454342644059432
+      ]
 

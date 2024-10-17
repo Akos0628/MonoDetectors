@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 import torch.nn as nn
-from lib.common.datasets.utils import class2angle
 
 def decode_detections(dets, info, calibs, cls_mean_size, threshold, problist=None):
     '''
@@ -28,7 +27,7 @@ def decode_detections(dets, info, calibs, cls_mean_size, threshold, problist=Non
             bbox = [x-w/2, y-h/2, x+w/2, y+h/2]
 
             depth = dets[i, j, -2]
-            score *= dets[i, j, -1]
+            #score *= dets[i, j, -1]
 
             # heading angle decoding
             alpha = get_heading_angle(dets[i, j, 6:30])
@@ -196,3 +195,13 @@ def get_heading_angle(heading):
     cls = np.argmax(heading_bin)
     res = heading_res[cls]
     return class2angle(cls, res, to_label_format=True)
+
+num_heading_bin = 12  # hyper param
+def class2angle(cls, residual, to_label_format=False):
+    ''' Inverse function to angle2class. '''
+    angle_per_class = 2 * np.pi / float(num_heading_bin)
+    angle_center = cls * angle_per_class
+    angle = angle_center + residual
+    if to_label_format and angle > np.pi:
+        angle = angle - 2 * np.pi
+    return angle
