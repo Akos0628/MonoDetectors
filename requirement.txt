@@ -4,3 +4,5 @@ opencv-python
 pillow<7
 tqdm
 numba
+grpcio
+grpcio-tools

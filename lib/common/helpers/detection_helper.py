@@ -33,3 +33,17 @@ class detectionInfo(object):
 
         # score
         self.score = np.float64(line[15])
+
+
+def toArrayFromString(line):
+    return line.strip().split(' ')
+
+def predArrayToResult(preds):
+    result = []
+    for line in preds:
+        result.append(toArrayFromString(line))
+
+    return result
+
+def stringFromLine(line):
+    return f'{line[0]} {line[1]} {line[2]} {line[3]} {int(line[4])} {int(line[5])} {int(line[6])} {int(line[7])} {line[8]} {line[9]} {line[10]} {line[11]} {line[12]} {line[13]} {line[14]} {line[15]}'

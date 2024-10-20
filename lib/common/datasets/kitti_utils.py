@@ -12,6 +12,8 @@ def get_calib_from_file(calib_file):
 
     return {'P2': P2.reshape(3, 4)}
 
+def get_calibs_from_P2(P2):
+    return [Calibration({'P2': np.array(P2).reshape(3, 4)})]
 
 class Calibration(object):
     def __init__(self, calib_file):
