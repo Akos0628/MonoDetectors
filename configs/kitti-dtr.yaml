@@ -2,11 +2,9 @@ dataset:
   type: 'kitti'
   data_dir: 'zdata/KITTI/object/'
   root_dir: '/home/akos/Documents/code/MonoDetectors'
-  label_dir: 'zdata/KITTI/object/training/label_2'
 
 model:
   type: 'MonoDTR'
-  treshold: 0.8  # confidence filter
   resume_model: './checkpoints/MonoDTR.pth' # pre-trained model path
   head:
     cls: ['Car']

@@ -9,7 +9,6 @@ from lib.monoDTR.visualDet3D.networks.utils.utils import BBox3dProjector
 class Printer(object):
     def __init__(self, cfg, model):
         self.cfg = cfg
-        self.treshold = cfg['treshold']
 
         self.model = model
         self.model.cuda()
@@ -26,7 +25,7 @@ class Printer(object):
         self.backprojector = BackProjection().cuda()
         self.projector = BBox3dProjector().cuda()
 
-    def print(self, img, calibs):
+    def print(self, img, calibs, threshold):
         torch.set_grad_enabled(False)
 
         original_P2 = calibs[0].P2
@@ -59,7 +58,7 @@ class Printer(object):
             bbox_2d[:, 0:4:2] *= scale_x
             bbox_2d[:, 1:4:2] *= scale_y
 
-            return toPredictions(scores, bbox_2d, bbox_3d_state_3d, thetas, obj_types, self.treshold)
+            return toPredictions(scores, bbox_2d, bbox_3d_state_3d, thetas, obj_types, threshold)
         else:
             print('non 3D')
     

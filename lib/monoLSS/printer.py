@@ -28,7 +28,7 @@ class Printer(object):
         self.downsample = cfg['downsample']
 
 
-    def print(self, img, calibs):
+    def print(self, img, calibs, threshold):
         img_size = np.array(img.size)
 
         center = np.array(img_size) / 2
@@ -66,7 +66,7 @@ class Printer(object):
             info = info,
             calibs = calibs,
             cls_mean_size=self.cls_mean_size,
-            threshold = self.cfg['threshold']
+            threshold = threshold
         )
         dets = dets[0]
         preds = []

@@ -6,7 +6,7 @@ from matplotlib.gridspec import GridSpec
 
 from lib.common.helpers.detection_helper import detectionInfo
 
-def visualization(image, calib, detections, drawBird):
+def visualization(image, calib, detections, draw3D, draw2D=False, drawBird=False):
     P2 = calib[0].P2
 
     fig = plt.figure(figsize=(20.00, 5.12), dpi=100)
@@ -35,8 +35,10 @@ def visualization(image, calib, detections, drawBird):
             elif obj.name == 'Pedestrian':
                 color = 'cyan'
             
-            #draw_2Dbox(ax, obj, color)
-            draw_3Dbox(ax, P2, obj, color)
+            if draw2D:
+                draw_2Dbox(ax, obj, color)
+            if draw3D:
+                draw_3Dbox(ax, P2, obj, color)
             if drawBird:
                 draw_birdeyes(ax2, obj, shape, color)
 

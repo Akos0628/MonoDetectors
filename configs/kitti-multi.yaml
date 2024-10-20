@@ -2,13 +2,11 @@ dataset:
   type: 'kitti'
   data_dir: 'zdata/KITTI/object/'
   root_dir: '/home/akos/Documents/code/MonoDetectors'
-  label_dir: 'zdata/KITTI/object/training/label_2'
 
 MonoLSS:
   type: 'MonoLSS'
   backbone: 'dla34'
   neck: 'DLAUp'
-  threshold: 0.07  # confidence filter
   resume_model: './checkpoints/model.pth' # pre-trained model path
   cls: ['Car','Pedestrian','Cyclist']
   resolution: [1280, 384]
@@ -21,7 +19,6 @@ MonoLSS:
 
 MonoDTR:
   type: 'MonoDTR'
-  treshold: 0.3  # confidence filter
   resume_model: './checkpoints/MonoDTR.pth' # pre-trained model path
   head:
     cls: ['Car']
