@@ -1,4 +1,4 @@
-MonoDTR:
+model:
   type: 'MonoDTR'
   resume_model: './checkpoints/MonoDTR.pth' # pre-trained model path
   head:

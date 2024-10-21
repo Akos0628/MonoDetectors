@@ -1,4 +1,4 @@
-MonoLSS:
+model:
   type: 'MonoLSS'
   backbone: 'dla34'
   neck: 'DLAUp'

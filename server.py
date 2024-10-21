@@ -1,37 +1,28 @@
 import os
-
+import io
+import yaml
 import grpc
+import fire
+import torch
+from PIL import Image
 from concurrent import futures
 from services import detector_pb2
 from services import detector_pb2_grpc
-import yaml
-import io
-import torch
-import numpy as np
-from PIL import Image
 from timeit import default_timer as timer
 from datetime import timedelta
 
-from lib.common.helpers.model_helper import build_model
 from lib.common.helpers.detection_helper import stringFromLine
+from lib.common.helpers.print_selector import selectPrinter
 from lib.common.datasets.kitti_utils import get_calibs_from_P2
 
-mode = 'test' # test, eval, train
-config = 'configs/dtr.yaml'
-
-# setting device on GPU if available, else CPU
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-print('Using device:', device)
-
-# load cfg
-assert (os.path.exists(config))
-cfg = yaml.load(open(config, 'r'), Loader=yaml.Loader)
-
-from lib.monoDTR.printer import Printer as PrinterDTR
-MonoDTR = PrinterDTR(cfg['MonoDTR'], build_model(cfg['MonoDTR']))
-
+# cuda available
+assert (torch.cuda.is_available())
+printer = None
 
 class DetectorServicer(detector_pb2_grpc.DetectorServicer):
+    def __init__(self):
+        assert(printer != None)
+
     def Detect(self, request, context):
         start_time = timer()
 
@@ -45,7 +36,7 @@ class DetectorServicer(detector_pb2_grpc.DetectorServicer):
         img = Image.open(stream)
         calibs = get_calibs_from_P2(calib)
 
-        preds = MonoDTR.print(img, calibs, treshold)
+        preds = printer.print(img, calibs, treshold)
         
         realPreds = []
         for line in preds:
@@ -56,12 +47,24 @@ class DetectorServicer(detector_pb2_grpc.DetectorServicer):
         print(timedelta(seconds=end_time - start_time))
         return detector_pb2.DetectResponse(detections=realPreds)
 
-def serve():
+def serve(
+    config:str="configs/lss.yaml",
+    port:str='50051'
+):
+    print(f'config is: {config}')
+    print(f'port is: {port}')
+    # load cfg
+    assert (os.path.exists(config))
+    cfg = yaml.load(open(config, 'r'), Loader=yaml.Loader)
+
+    global printer
+    printer = selectPrinter(cfg['model'])
+
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     detector_pb2_grpc.add_DetectorServicer_to_server(DetectorServicer(), server)
-    server.add_insecure_port('[::]:50051')
+    server.add_insecure_port(f'[::]:{port}')
     server.start()
     server.wait_for_termination()
 
 if __name__ == '__main__':
-    serve()
+    fire.Fire(serve)

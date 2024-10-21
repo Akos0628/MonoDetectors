@@ -6,3 +6,4 @@ tqdm
 numba
 grpcio
 grpcio-tools
+fire
