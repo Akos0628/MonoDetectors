@@ -3,6 +3,8 @@
 
 # my data 
 /zdata/
+/calibPictures/
+calib.txt
 
 # output dir
 /MonoLSS/

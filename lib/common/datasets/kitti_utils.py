@@ -7,7 +7,10 @@ def get_calib_from_file(calib_file):
     with open(calib_file) as f:
         lines = f.readlines()
 
-    obj = lines[2].strip().split(' ')[1:]
+    if len(lines) == 1:
+        obj = lines[0].strip().split(' ')[:]
+    else:
+        obj = lines[2].strip().split(' ')[1:]
     P2 = np.array(obj, dtype=np.float32)
 
     return {'P2': P2.reshape(3, 4)}
@@ -60,6 +63,9 @@ class Calibration(object):
             ry += 2 * np.pi
 
         return ry
+    
+    def toStringP2WithoutPosition(self):
+        return f'{self.fu} 0 {self.cu} 0 0 {self.fv} {self.cv} 0 0 0 1 0'
 
 ###################  affine trainsform  ###################
 
