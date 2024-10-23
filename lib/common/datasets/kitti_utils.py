@@ -15,6 +15,22 @@ def get_calib_from_file(calib_file):
 
     return {'P2': P2.reshape(3, 4)}
 
+def get_P2_from_file(calib_file):
+    with open(calib_file) as f:
+        lines = f.readlines()
+
+    if len(lines) == 1:
+        obj = lines[0]
+    else:
+        obj = lines[2]
+
+    return obj
+
+def convertP2StringToCalib(calib):
+    obj = calib.strip().split(' ')
+
+    return np.array(obj, dtype=np.float32)
+
 def get_calibs_from_P2(P2):
     return [Calibration({'P2': np.array(P2).reshape(3, 4)})]
 

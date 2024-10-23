@@ -1,3 +1,4 @@
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -62,6 +63,26 @@ def visualization(image, calib, detections, draw3D, draw2D=False, drawBird=False
         ax2.set_yticks([])
 
     plt.show()
+
+def visualizationCv(img, calib, detections):
+    P2 = calib[0].P2
+
+    plots = None
+    for line_p in detections:
+        obj = detectionInfo(line_p)
+        truncated = np.abs(float(obj.truncation))
+        occluded = np.abs(float(obj.occlusion))
+        trunc_level = 255
+
+        # truncated object in dataset is not observable
+        if truncated < trunc_level:
+            color = 'green'
+            if obj.name == 'Cyclist':
+                color = 'yellow'
+            elif obj.name == 'Pedestrian':
+                color = 'cyan'
+            
+            draw_3Dbox_cv2(img, P2, obj, color)
 
 def compute_birdviewbox(obj, shape, scale):
     h = obj.h * scale
@@ -159,3 +180,37 @@ def draw_3Dbox(ax, P2, obj, color):
     front_fill = patches.Rectangle((corners_2D[:, 1]), width, height, fill=True, color=color, alpha=0.4)
     ax.add_patch(p)
     ax.add_patch(front_fill)
+
+color_dict = {
+    'red': (0, 0, 255),
+    'green': (0, 255, 0),
+    'blue': (255, 0, 0),
+    'yellow': (0, 255, 255),
+    'cyan': (255, 255, 0),
+    'magenta': (255, 0, 255),
+    'white': (255, 255, 255),
+    'black': (0, 0, 0),
+}
+
+def draw_3Dbox_cv2(image, P2, obj, color):
+    corners_2D = compute_3Dbox(P2, obj)
+
+    if color in color_dict:
+        bgr_color = color_dict[color]
+    else:
+        bgr_color = (255, 255, 255)
+
+    bb3d_lines_verts_idx = [0, 1, 2, 3, 4, 5, 6, 7, 0, 5, 4, 1, 2, 7, 6, 3]
+    bb3d_on_2d_lines_verts = corners_2D[:, bb3d_lines_verts_idx]
+    
+    for i in range(len(bb3d_lines_verts_idx) - 1):
+        pt1 = tuple(bb3d_on_2d_lines_verts[:, i].astype(int))
+        pt2 = tuple(bb3d_on_2d_lines_verts[:, i + 1].astype(int))
+        cv2.line(image, pt1, pt2, bgr_color, 2)
+    
+    front_corners = corners_2D[:, [1, 2, 6, 5]].astype(int)
+    
+    overlay = image.copy()
+    cv2.fillPoly(overlay, [front_corners.T], bgr_color)
+    alpha = 0.4
+    cv2.addWeighted(overlay, alpha, image, 1 - alpha, 0, image)

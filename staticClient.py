@@ -17,13 +17,8 @@ import grpc
 from services import detector_pb2
 from services import detector_pb2_grpc
 
-BASE_DIR = os.path.abspath('.')
-SAVE_DIR = BASE_DIR + '/calibPictures'
-if not os.path.exists(SAVE_DIR):
-    os.makedirs(SAVE_DIR)
 CALIB_NAME = "calib.txt"
 
-print(SAVE_DIR)
 P2 = None
 if os.path.isfile(CALIB_NAME):
     print('calib file exists')
@@ -55,6 +50,7 @@ def run(
     treshold:float=0.02
 ):
     cam = cv2.VideoCapture(captureDevice)
+    cam.set(cv2.CAP_PROP_FPS, 5)
 
     frame_width = int(cam.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cam.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -66,49 +62,39 @@ def run(
     crop_height = int((frame_height - height)/2)
     crop_width = int((frame_width - width)/2)
 
-    count = 0
     global P2
+    frame_rate = 15
+    prev = 0
+    
     while cam.isOpened():
+        time_elapsed = timer() - prev
         ret, frame = cam.read()
+
 
         # Display the captured frame
         img_brg = frame[crop_height:frame_height-crop_height, crop_width:frame_width-crop_width]
-        cv2.imshow('Camera', img_brg)
-
 
         pressedKey = cv2.waitKey(1) & 0xFF
         if pressedKey == ord('q'):
             break
-        elif pressedKey == ord('s'):
-            name = "/frame%d.png"%count
-            fullName = SAVE_DIR + name
-            print(fullName)
-            count += 1
-        elif pressedKey == ord('e'):
-            calib = calculateCalib(SAVE_DIR)
-            calib = f'{calib[0,0]} 0 {calib[0,2]} 0 0 {calib[1,1]} {calib[1,2]} 0 0 0 1 0'
-            print(calib)
-            with open(CALIB_NAME, "w") as text_file:
-                text_file.write(calib)
-            P2 = calib
-        elif pressedKey == ord('d'):
-            if P2 == None:
-                print(f'Missing {CALIB_NAME}')
-            else: 
-                print(f'Found {CALIB_NAME}')
-                with grpc.insecure_channel(serverAddress) as channel:
-                    stub = detector_pb2_grpc.DetectorStub(channel)
-                    start_time = timer()
-                    calibs, result = getDetect(img_brg, convertP2StringToCalib(P2), stub, width, height, treshold)
-                    end_time = timer()
-                    print(timedelta(seconds=end_time - start_time))
-                    visualizationCv(img_brg, calibs, result)
+        else:
+            if time_elapsed > 1./frame_rate:
+                prev = timer()
+                if P2 == None:
+                    return
+                else: 
+                    with grpc.insecure_channel(serverAddress) as channel:
+                        stub = detector_pb2_grpc.DetectorStub(channel)
+                        start_time = timer()
+                        calibs, result = getDetect(img_brg, convertP2StringToCalib(P2), stub, width, height, treshold)
+                        end_time = timer()
+                        print(timedelta(seconds=end_time - start_time))
+                        visualizationCv(img_brg, calibs, result)
 
-                    #img = cv2.cvtColor(img_brg, cv2.COLOR_BGR2RGB)
-                    #visualization(img, calibs, result, True, False, False)
+                        #img = cv2.cvtColor(img_brg, cv2.COLOR_BGR2RGB)
+                        #visualization(img, calibs, result, True, False, False)
 
-                    cv2.imshow('Camera', img_brg)
-                    cv2.waitKey(0)
+                        cv2.imshow('Camera', img_brg)
 
     # Release the capture and writer objects
     cam.release()
