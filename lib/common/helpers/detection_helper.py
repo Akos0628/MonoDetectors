@@ -36,7 +36,12 @@ class detectionInfo(object):
 
 
 def toArrayFromString(line):
-    return line.strip().split(' ')
+    newLine = []
+    tmp = line.strip().split(' ')
+    newLine.append(tmp[0])
+    for item in tmp[1:]:
+        newLine.append(float(item))
+    return newLine
 
 def predArrayToResult(preds):
     result = []

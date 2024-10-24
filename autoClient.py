@@ -5,12 +5,9 @@ import os
 from timeit import default_timer as timer
 from datetime import timedelta
 from multiprocessing import Pool, Queue
-import time
 
-from lib.common.helpers.calib_calculator import calculateCalib
 from lib.common.helpers.detection_helper import predArrayToResult
 from lib.common.helpers.visualization_helper import visualizationCv
-from lib.common.helpers.visualization_helper import visualization
 from lib.common.datasets.kitti_utils import get_P2_from_file
 from lib.common.datasets.kitti_utils import get_calibs_from_P2
 from lib.common.datasets.kitti_utils import convertP2StringToCalib

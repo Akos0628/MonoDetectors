@@ -6,7 +6,8 @@ import torch
 
 def compareAll(list1, list2):
     comparison_matrix = []
-
+    if len(list1) == 0 or len(list2) == 0:
+        return []
     for item1 in list1:
         row = []
         for item2 in list2:
@@ -33,15 +34,17 @@ def compare(item1, item2):
     bbox3d1 = np.array([info1.tx, info1.ty, info1.tz, info1.h, info1.w, info1.l, info1.rot_global]).astype(np.float32)
     bbox3d2 = np.array([info2.tx, info2.ty, info2.tz, info2.h, info2.w, info2.l, info2.rot_global]).astype(np.float32)
 
-    iou3d = boxes_iou3d_gpu(torch.tensor(np.array([bbox3d1])).cuda(), torch.tensor(np.array([bbox3d2])).cuda()).detach().cpu().numpy()[0][0]
 
     bbox1 = np.array([info1.xmin, info1.ymin, info1.xmax, info1.ymax]).astype(np.int32)
     bbox2 = np.array([info2.xmin, info2.ymin, info2.xmax, info2.ymax]).astype(np.int32)
 
     iou2d = iou_2d(np.array([bbox1]), np.array([bbox2]))
-    print(iou2d)
+    #print(iou2d)
     if iou2d < 0.5:
-        iou2d = 0
+        iou2d = 0.0
+        iou3d = 0.0
+    else:
+        iou3d = boxes_iou3d_gpu(torch.tensor(np.array([bbox3d1])).cuda(), torch.tensor(np.array([bbox3d2])).cuda()).detach().cpu().numpy()[0][0]
 
     return iou3d + iou2d/2
 
@@ -72,6 +75,8 @@ def average_angle(angle1, angle2, threshold=np.pi / 2):
 def average_lists(list1, list2):
     if len(list1) != len(list2):
         raise ValueError("A listák hossza nem egyezik.")
+    if len(list1) == 0 or len(list2) == 0:
+        return []
 
     averaged_list = []
 
