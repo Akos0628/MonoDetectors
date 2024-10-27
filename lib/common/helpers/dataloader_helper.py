@@ -1,7 +1,7 @@
 from torch.utils.data import DataLoader
 from lib.common.datasets.kitti import KITTI
 
-def build_dataloader(cfg, mode):
+def build_dataset(cfg, mode):
     # --------------  build kitti dataset ----------------
     if cfg['type'] == 'kitti':
         if mode == 'train':

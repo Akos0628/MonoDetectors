@@ -9,7 +9,7 @@ from datetime import timedelta
 import io
 import yaml
 
-from lib.common.helpers.dataloader_helper import build_dataloader
+from lib.common.helpers.dataloader_helper import build_dataset
 from lib.common.helpers.visualization_helper import visualization
 from lib.common.helpers.detection_helper import predArrayToResult
 from lib.common.helpers.print_helper import PrintHelper
@@ -23,7 +23,7 @@ assert (os.path.exists(config))
 cfg = yaml.load(open(config, 'r'), Loader=yaml.Loader)
   
 #  build dataloader
-dataset = build_dataloader(cfg['dataset'], mode)
+dataset = build_dataset(cfg['dataset'], mode)
 printHelper = PrintHelper(dataset)
 
 def run(img, calib, stub):
