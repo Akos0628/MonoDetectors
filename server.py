@@ -58,7 +58,7 @@ def serve(
     cfg = yaml.load(open(config, 'r'), Loader=yaml.Loader)
 
     global printer
-    printer = selectPrinter(cfg['model'])
+    printer = selectPrinter(cfg)
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     detector_pb2_grpc.add_DetectorServicer_to_server(DetectorServicer(), server)

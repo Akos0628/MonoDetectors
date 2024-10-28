@@ -1,5 +1,7 @@
-model:
+type: 'MonoDTR'
+MonoDTR:
   type: 'MonoDTR'
+  threshold: 0.8
   resume_model: './checkpoints/MonoDTR.pth' # pre-trained model path
   head:
     cls: ['Car']

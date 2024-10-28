@@ -2,12 +2,20 @@ dataset:
   type: 'kitti'
   data_dir: 'zdata/KITTI/object/'
   root_dir: '/home/akos/Documents/code/MonoDetectors'
+  label_dir: 'zdata/KITTI/object/training/label_2'
+  eval_cls: ['Car']
 
+tester:
+  log_dir: 'results/logs/'
+  out_dir: 'results/output/'
+
+type: 'multi'
 MonoLSS:
   type: 'MonoLSS'
+  threshold: 0.0
   backbone: 'dla34'
   neck: 'DLAUp'
-  resume_model: './checkpoints/model.pth' # pre-trained model path
+  resume_model: './checkpoints/monolss-tester.pth' # pre-trained model path
   cls: ['Car','Pedestrian','Cyclist']
   resolution: [1280, 384]
   max_objs: 50
@@ -19,7 +27,8 @@ MonoLSS:
 
 MonoDTR:
   type: 'MonoDTR'
-  resume_model: './checkpoints/MonoDTR.pth' # pre-trained model path
+  threshold: 0.0
+  resume_model: './checkpoints/MonoDTR-tester.pth' # pre-trained model path
   head:
     cls: ['Car']
     num_regression_loss_terms: 12

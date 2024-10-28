@@ -1,8 +1,10 @@
-model:
+type: 'MonoLSS'
+MonoLSS:
   type: 'MonoLSS'
+  threshold: 0.2
+  resume_model: './checkpoints/monolss.pth' # pre-trained model path
   backbone: 'dla34'
   neck: 'DLAUp'
-  resume_model: './checkpoints/model.pth' # pre-trained model path
   cls: ['Car','Pedestrian','Cyclist']
   resolution: [1280, 384]
   max_objs: 50

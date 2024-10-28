@@ -15,7 +15,7 @@ from lib.common.helpers.detection_helper import predArrayToResult
 from lib.common.helpers.print_helper import PrintHelper
 from lib.common.datasets.kitti_utils import get_calibs_from_P2
 
-mode = 'test' # test, eval, train
+mode = 'val' # test, eval, train
 config = 'configs/kitti-data.yaml'
 
 # load cfg

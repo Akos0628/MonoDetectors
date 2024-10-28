@@ -26,9 +26,15 @@ class Printer(object):
         self.resolution = np.array(cfg['resolution'])
         self.cls_mean_size = np.array(cfg['cls_mean_size'])
         self.downsample = cfg['downsample']
+        self.threshold=cfg['threshold']
+
+        self.mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
+        self.std  = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 
-    def print(self, img, calibs, threshold):
+    def print(self, img, calibs, threshold=None):
+        if threshold is None:
+            threshold = self.threshold
         img_size = np.array(img.size)
 
         center = np.array(img_size) / 2
@@ -41,7 +47,7 @@ class Printer(object):
                             data=tuple(trans_inv.reshape(-1).tolist()),
                             resample=Image.BILINEAR)
         inputs = np.array(inputs).astype(np.float32) / 255.0
-        #inputs = (inputs - mean) / std
+        inputs = (inputs - self.mean) / self.std
         inputs = inputs.transpose(2, 0, 1)  # C * H * W
 
         features_size = self.resolution // self.downsample

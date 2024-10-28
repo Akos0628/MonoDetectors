@@ -24,8 +24,11 @@ class Printer(object):
         self.model.to(self.device)
         self.backprojector = BackProjection().cuda()
         self.projector = BBox3dProjector().cuda()
+        self.threshold=cfg['threshold']
 
-    def print(self, img, calibs, threshold):
+    def print(self, img, calibs, threshold=None):
+        if threshold is None:
+            threshold = self.threshold
         torch.set_grad_enabled(False)
 
         original_P2 = calibs[0].P2

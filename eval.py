@@ -19,7 +19,7 @@ from lib.common.helpers.print_helper import PrintHelper
 
 
 parser = argparse.ArgumentParser(description='implementation of MonoLSS')
-parser.add_argument('--config', type=str, default='lib/kitti.yaml')
+parser.add_argument('--config', type=str, default='configs/kitti-multi.yaml')
 args = parser.parse_args()
 
 
@@ -44,25 +44,19 @@ def main():
     # load cfg
     assert (os.path.exists(args.config))
     cfg = yaml.load(open(args.config, 'r'), Loader=yaml.Loader)
-    os.makedirs(cfg['trainer']['log_dir'], exist_ok=True)
-    logger = create_logger(os.path.join(cfg['trainer']['log_dir'], 'train.log'))
-
-    import shutil
-    if not args.evaluate:
-        if not args.test:
-            if os.path.exists(os.path.join(cfg['trainer']['log_dir'], 'lib/')):
-                shutil.rmtree(os.path.join(cfg['trainer']['log_dir'], 'lib/'))
+    os.makedirs(cfg['tester']['log_dir'], exist_ok=True)
+    logger = create_logger(os.path.join(cfg['tester']['log_dir'], 'train.log'))
 
     #  build dataloader
     dataset = build_dataset(cfg['dataset'], "train")                           
         
     # build model
     printHelper = PrintHelper(dataset)
-    printer = selectPrinter(cfg['model'])
+    printer = selectPrinter(cfg)
 
     # evaluation mode
     print('evaluation start')
-    tester = Tester(cfg['tester'], "test", logger)
+    tester = Tester(cfg['tester'], cfg['dataset'], "val", logger)
     tester.test(printHelper, printer)
     return
     
