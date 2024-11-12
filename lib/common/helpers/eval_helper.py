@@ -1,19 +1,16 @@
 import io as sysio
-import time
 import math
 import numba
 import numpy as np
 from numba import cuda
 
 import os
-import sys
 from tqdm import tqdm
 import warnings
 
 warnings.filterwarnings('ignore')
 
 AP_mode = 40
-# AP_mode = 11
 
 @cuda.jit(
     device=True,
@@ -457,7 +454,6 @@ def box3d_overlap_kernel(boxes,
                 else:
                     rinc[i, j] = 0.0
 
-
 def box3d_overlap(boxes, qboxes, criterion=-1, z_axis=1, z_center=1.0):
     """kitti camera format z_axis=1.
     """
@@ -471,7 +467,6 @@ def box3d_overlap(boxes, qboxes, criterion=-1, z_axis=1, z_center=1.0):
     # print("riou time", time.time() - t)
     box3d_overlap_kernel(boxes, qboxes, rinc, criterion, z_axis, z_center)
     return rinc
-
 
 @numba.jit(nopython=True)
 def compute_statistics_jit(overlaps,
@@ -593,7 +588,6 @@ def compute_statistics_jit(overlaps,
                 similarity = -1
     return tp, fp, fn, similarity, thresholds[:thresh_idx]
 
-
 def get_split_parts(num, num_part):
     same_part = num // num_part
     remain_num = num % num_part
@@ -601,7 +595,6 @@ def get_split_parts(num, num_part):
         return [same_part] * num_part
     else:
         return [same_part] * num_part + [remain_num]
-
 
 @numba.jit(nopython=True)
 def fused_compute_statistics(overlaps,
@@ -651,7 +644,6 @@ def fused_compute_statistics(overlaps,
         gt_num += gt_nums[i]
         dt_num += dt_nums[i]
         dc_num += dc_nums[i]
-
 
 def calculate_iou_partly(gt_annos,
                          dt_annos,
@@ -738,7 +730,6 @@ def calculate_iou_partly(gt_annos,
 
     return overlaps, parted_overlaps, total_gt_num, total_dt_num
 
-
 def _prepare_data(gt_annos, dt_annos, current_class, difficulty):
     gt_datas_list = []
     dt_datas_list = []
@@ -768,7 +759,6 @@ def _prepare_data(gt_annos, dt_annos, current_class, difficulty):
     total_dc_num = np.stack(total_dc_num, axis=0)
     return (gt_datas_list, dt_datas_list, ignored_gts, ignored_dets, dontcares,
             total_dc_num, total_num_valid_gt)
-
 
 def eval_class_v3(gt_annos,
                   dt_annos,
@@ -811,6 +801,8 @@ def eval_class_v3(gt_annos,
     num_minoverlap = len(min_overlaps)
     num_class = len(current_classes)
     num_difficulty = len(difficultys)
+    detected_counts = np.zeros([num_class, num_difficulty, num_minoverlap])
+    gt_counts = np.zeros([num_class, num_difficulty])
     precision = np.zeros(
         [num_class, num_difficulty, num_minoverlap, N_SAMPLE_PTS])
     recall = np.zeros(
@@ -837,7 +829,11 @@ def eval_class_v3(gt_annos,
                         thresh=0.0,
                         compute_fp=False)
                     tp, fp, fn, similarity, thresholds = rets
+                    match_count = np.sum(tp)  # Count of matched detections
+                    detected_counts[m, l, k] += match_count
                     thresholdss += thresholds.tolist()
+
+                gt_counts[m, l] += total_num_valid_gt
                 thresholdss = np.array(thresholdss)
                 thresholds = get_thresholds(thresholdss, total_num_valid_gt)
                 thresholds = np.array(thresholds)
@@ -901,9 +897,10 @@ def eval_class_v3(gt_annos,
         "orientation": aos,
         "thresholds": all_thresholds,
         "min_overlaps": min_overlaps,
+        "detected_counts": detected_counts,
+        "gt_counts": gt_counts
     }
     return ret_dict
-
 
 def get_mAP(prec):
     sums = 0
@@ -917,54 +914,6 @@ def get_mAP(prec):
         for i in range(0, prec.shape[-1], 4):
             sums = sums + prec[..., i]
         return sums / 11 * 100
-
-
-def do_eval_v2(gt_annos,
-               dt_annos,
-               current_classes,
-               min_overlaps,
-               compute_aos=False,
-               difficultys=(0, 1, 2),
-               z_axis=1,
-               z_center=1.0):
-    # min_overlaps: [num_minoverlap, metric, num_class]
-    ret = eval_class_v3(
-        gt_annos,
-        dt_annos,
-        current_classes,
-        difficultys,
-        0,
-        min_overlaps,
-        compute_aos,
-        z_axis=z_axis,
-        z_center=z_center)
-    # ret: [num_class, num_diff, num_minoverlap, num_sample_points]
-    mAP_bbox = get_mAP(ret["precision"])
-    mAP_aos = None
-    if compute_aos:
-        mAP_aos = get_mAP(ret["orientation"])
-    ret = eval_class_v3(
-        gt_annos,
-        dt_annos,
-        current_classes,
-        difficultys,
-        1,
-        min_overlaps,
-        z_axis=z_axis,
-        z_center=z_center)
-    mAP_bev = get_mAP(ret["precision"])
-    ret = eval_class_v3(
-        gt_annos,
-        dt_annos,
-        current_classes,
-        difficultys,
-        2,
-        min_overlaps,
-        z_axis=z_axis,
-        z_center=z_center)
-    mAP_3d = get_mAP(ret["precision"])
-    return mAP_bbox, mAP_bev, mAP_3d, mAP_aos
-
 
 def do_eval_v3(gt_annos,
                dt_annos,
@@ -991,36 +940,6 @@ def do_eval_v3(gt_annos,
         metrics[types[i]] = ret
     return metrics
 
-
-def do_coco_style_eval(gt_annos,
-                       dt_annos,
-                       current_classes,
-                       overlap_ranges,
-                       compute_aos,
-                       z_axis=1,
-                       z_center=1.0):
-    # overlap_ranges: [range, metric, num_class]
-    min_overlaps = np.zeros([10, *overlap_ranges.shape[1:]])
-    for i in range(overlap_ranges.shape[1]):
-        for j in range(overlap_ranges.shape[2]):
-            min_overlaps[:, i, j] = np.linspace(*overlap_ranges[:, i, j])
-    mAP_bbox, mAP_bev, mAP_3d, mAP_aos = do_eval_v2(
-        gt_annos,
-        dt_annos,
-        current_classes,
-        min_overlaps,
-        compute_aos,
-        z_axis=z_axis,
-        z_center=z_center)
-    # ret: [num_class, num_diff, num_minoverlap]
-    mAP_bbox = mAP_bbox.mean(-1)
-    mAP_bev = mAP_bev.mean(-1)
-    mAP_3d = mAP_3d.mean(-1)
-    if mAP_aos is not None:
-        mAP_aos = mAP_aos.mean(-1)
-    return mAP_bbox, mAP_bev, mAP_3d, mAP_aos
-
-
 def print_str(value, *arg, sstream=None):
     if sstream is None:
         sstream = sysio.StringIO()
@@ -1028,7 +947,6 @@ def print_str(value, *arg, sstream=None):
     sstream.seek(0)
     print(value, *arg, file=sstream)
     return sstream.getvalue()
-
 
 def get_official_eval_result(gt_annos,
                              dt_annos,
@@ -1102,6 +1020,10 @@ def get_official_eval_result(gt_annos,
             detail[class_name][f"bbox@{min_overlaps[i, 0, j]:.2f}"] = mAPbbox.tolist()
             detail[class_name][f"bev@{min_overlaps[i, 1, j]:.2f}"] = mAPbev.tolist()
             detail[class_name][f"3d@{min_overlaps[i, 2, j]:.2f}"] = mAP3d.tolist()
+            detail[class_name][f"found_bbox@{min_overlaps[i, 0, j]:.2f}"] = metrics["bbox"]["detected_counts"][j, :, i]
+            detail[class_name][f"found_bev@{min_overlaps[i, 1, j]:.2f}"] = metrics["bev"]["detected_counts"][j, :, i]
+            detail[class_name][f"found_3d@{min_overlaps[i, 2, j]:.2f}"] = metrics["3d"]["detected_counts"][j, :, i]
+            detail[class_name][f"total@{min_overlaps[i, 0, j]:.2f}"] = metrics["bbox"]["gt_counts"][j, :]
 
             result += print_str(
                 (f"{class_to_name[curcls]} "
@@ -1121,107 +1043,6 @@ def get_official_eval_result(gt_annos,
         "result": result,
         "detail": detail,
     }
-
-
-def get_coco_eval_result(gt_annos,
-                         dt_annos,
-                         current_classes,
-                         z_axis=1,
-                         z_center=1.0):
-    class_to_name = {
-        0: 'Car',
-        1: 'Pedestrian',
-        2: 'Cyclist',
-        3: 'Van',
-        4: 'Person_sitting',
-        5: 'car',
-        6: 'tractor',
-        7: 'trailer',
-    }
-    class_to_range = {
-        0: [0.5, 1.0, 0.05],
-        1: [0.25, 0.75, 0.05],
-        2: [0.25, 0.75, 0.05],
-        3: [0.5, 1.0, 0.05],
-        4: [0.25, 0.75, 0.05],
-        5: [0.5, 1.0, 0.05],
-        6: [0.5, 1.0, 0.05],
-        7: [0.5, 1.0, 0.05],
-    }
-    class_to_range = {
-        0: [0.5, 0.95, 10],
-        1: [0.25, 0.7, 10],
-        2: [0.25, 0.7, 10],
-        3: [0.5, 0.95, 10],
-        4: [0.25, 0.7, 10],
-        5: [0.5, 0.95, 10],
-        6: [0.5, 0.95, 10],
-        7: [0.5, 0.95, 10],
-    }
-
-    name_to_class = {v: n for n, v in class_to_name.items()}
-    if not isinstance(current_classes, (list, tuple)):
-        current_classes = [current_classes]
-    current_classes_int = []
-    for curcls in current_classes:
-        if isinstance(curcls, str):
-            current_classes_int.append(name_to_class[curcls])
-        else:
-            current_classes_int.append(curcls)
-    current_classes = current_classes_int
-    overlap_ranges = np.zeros([3, 3, len(current_classes)])
-    for i, curcls in enumerate(current_classes):
-        overlap_ranges[:, :, i] = np.array(
-            class_to_range[curcls])[:, np.newaxis]
-    result = ''
-    # check whether alpha is valid
-    compute_aos = False
-    for anno in dt_annos:
-        if anno['alpha'].shape[0] != 0:
-            if anno['alpha'][0] != -10:
-                compute_aos = True
-            break
-    mAPbbox, mAPbev, mAP3d, mAPaos = do_coco_style_eval(
-        gt_annos,
-        dt_annos,
-        current_classes,
-        overlap_ranges,
-        compute_aos,
-        z_axis=z_axis,
-        z_center=z_center)
-    detail = {}
-    for j, curcls in enumerate(current_classes):
-        class_name = class_to_name[curcls]
-        detail[class_name] = {}
-        # mAP threshold array: [num_minoverlap, metric, class]
-        # mAP result: [num_class, num_diff, num_minoverlap]
-        o_range = np.array(class_to_range[curcls])[[0, 2, 1]]
-        o_range[1] = (o_range[2] - o_range[0]) / (o_range[1] - 1)
-        result += print_str((f"{class_to_name[curcls]} "
-                             "coco AP@{:.2f}:{:.2f}:{:.2f}:".format(*o_range)))
-        result += print_str((f"bbox AP:{mAPbbox[j, 0]:.2f}, "
-                             f"{mAPbbox[j, 1]:.2f}, "
-                             f"{mAPbbox[j, 2]:.2f}"))
-        result += print_str((f"bev  AP:{mAPbev[j, 0]:.2f}, "
-                             f"{mAPbev[j, 1]:.2f}, "
-                             f"{mAPbev[j, 2]:.2f}"))
-        result += print_str((f"3d   AP:{mAP3d[j, 0]:.2f}, "
-                             f"{mAP3d[j, 1]:.2f}, "
-                             f"{mAP3d[j, 2]:.2f}"))
-        detail[class_name][f"bbox"] = mAPbbox[j].tolist()
-        detail[class_name][f"bev"] = mAPbev[j].tolist()
-        detail[class_name][f"3d"] = mAP3d[j].tolist()
-
-        if compute_aos:
-            detail[class_name][f"aos"] = mAPaos[j].tolist()
-            result += print_str((f"aos  AP:{mAPaos[j, 0]:.2f}, "
-                                 f"{mAPaos[j, 1]:.2f}, "
-                                 f"{mAPaos[j, 2]:.2f}"))
-    return {
-        "result": result,
-        "detail": detail,
-    }
-
 
 def eval_from_scrach(gt_dir, det_dir, eval_cls_list=None, ap_mode=40):
     global AP_mode

@@ -12,7 +12,6 @@ import logging
 import argparse
 
 from lib.common.helpers.dataloader_helper import build_dataset
-from lib.common.helpers.model_helper import build_model
 from lib.common.helpers.tester_helper import Tester
 from lib.common.helpers.print_selector import selectPrinter
 from lib.common.helpers.print_helper import PrintHelper
