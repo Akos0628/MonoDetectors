@@ -801,7 +801,8 @@ def eval_class_v3(gt_annos,
     num_minoverlap = len(min_overlaps)
     num_class = len(current_classes)
     num_difficulty = len(difficultys)
-    detected_counts = np.zeros([num_class, num_difficulty, num_minoverlap])
+    tp_counts = np.zeros([num_class, num_difficulty, num_minoverlap])
+    fp_counts = np.zeros([num_class, num_difficulty, num_minoverlap])
     gt_counts = np.zeros([num_class, num_difficulty])
     precision = np.zeros(
         [num_class, num_difficulty, num_minoverlap, N_SAMPLE_PTS])
@@ -814,6 +815,9 @@ def eval_class_v3(gt_annos,
             rets = _prepare_data(gt_annos, dt_annos, current_class, difficulty)
             (gt_datas_list, dt_datas_list, ignored_gts, ignored_dets,
              dontcares, total_dc_num, total_num_valid_gt) = rets
+            
+            gt_counts[m, l] += total_num_valid_gt
+
             for k, min_overlap in enumerate(min_overlaps[:, metric, m]):
                 thresholdss = []
                 for i in range(len(gt_annos)):
@@ -827,13 +831,14 @@ def eval_class_v3(gt_annos,
                         metric,
                         min_overlap=min_overlap,
                         thresh=0.0,
-                        compute_fp=False)
+                        compute_fp=True)
                     tp, fp, fn, similarity, thresholds = rets
-                    match_count = np.sum(tp)  # Count of matched detections
-                    detected_counts[m, l, k] += match_count
+                    tp_count = np.sum(tp)  
+                    fp_count = np.sum(fp)  
+                    tp_counts[m, l, k] += tp_count
+                    fp_counts[m, l, k] += fp_count
                     thresholdss += thresholds.tolist()
 
-                gt_counts[m, l] += total_num_valid_gt
                 thresholdss = np.array(thresholdss)
                 thresholds = get_thresholds(thresholdss, total_num_valid_gt)
                 thresholds = np.array(thresholds)
@@ -897,7 +902,8 @@ def eval_class_v3(gt_annos,
         "orientation": aos,
         "thresholds": all_thresholds,
         "min_overlaps": min_overlaps,
-        "detected_counts": detected_counts,
+        "tp_counts": tp_counts,
+        "fp_counts": fp_counts,
         "gt_counts": gt_counts
     }
     return ret_dict
@@ -1020,9 +1026,12 @@ def get_official_eval_result(gt_annos,
             detail[class_name][f"bbox@{min_overlaps[i, 0, j]:.2f}"] = mAPbbox.tolist()
             detail[class_name][f"bev@{min_overlaps[i, 1, j]:.2f}"] = mAPbev.tolist()
             detail[class_name][f"3d@{min_overlaps[i, 2, j]:.2f}"] = mAP3d.tolist()
-            detail[class_name][f"found_bbox@{min_overlaps[i, 0, j]:.2f}"] = metrics["bbox"]["detected_counts"][j, :, i]
-            detail[class_name][f"found_bev@{min_overlaps[i, 1, j]:.2f}"] = metrics["bev"]["detected_counts"][j, :, i]
-            detail[class_name][f"found_3d@{min_overlaps[i, 2, j]:.2f}"] = metrics["3d"]["detected_counts"][j, :, i]
+            detail[class_name][f"tp_bbox@{min_overlaps[i, 0, j]:.2f}"] = metrics["bbox"]["tp_counts"][j, :, i]
+            detail[class_name][f"fp_bbox@{min_overlaps[i, 0, j]:.2f}"] = metrics["bbox"]["fp_counts"][j, :, i]
+            detail[class_name][f"tp_bev@{min_overlaps[i, 1, j]:.2f}"] = metrics["bev"]["tp_counts"][j, :, i]
+            detail[class_name][f"fp_bev@{min_overlaps[i, 1, j]:.2f}"] = metrics["bev"]["fp_counts"][j, :, i]
+            detail[class_name][f"tp_3d@{min_overlaps[i, 2, j]:.2f}"] = metrics["3d"]["tp_counts"][j, :, i]
+            detail[class_name][f"fp_3d@{min_overlaps[i, 2, j]:.2f}"] = metrics["3d"]["fp_counts"][j, :, i]
             detail[class_name][f"total@{min_overlaps[i, 0, j]:.2f}"] = metrics["bbox"]["gt_counts"][j, :]
 
             result += print_str(

@@ -2,7 +2,8 @@ from lib.monoDTR.printer import Printer as PrinterDTR
 from lib.monoLSS.printer import Printer as PrinterLSS
 from lib.common.multi_intersection_printer import Printer as PrinterMultiIntersection
 from lib.common.multi_union_printer import Printer as PrinterMultiUnion
-from lib.common.weighted_multi_printer import Printer as PrinterMultiWeighted
+from lib.common.weighted_multi_intersection_printer import Printer as PrinterMultiIntersectionWeighted
+from lib.common.weighted_multi_union_printer import Printer as PrinterMultiUnionWeighted
 from lib.common.helpers.model_helper import build_model
 
 def selectPrinter(cfg):
@@ -21,8 +22,13 @@ def selectPrinter(cfg):
             PrinterLSS(cfg['MonoLSS'], build_model(cfg['MonoLSS'])), 
             PrinterDTR(cfg['MonoDTR'], build_model(cfg['MonoDTR'])),
         )
-    elif type == 'multi-weighted':
-        return PrinterMultiWeighted(
+    elif type == 'multi-intersect-weighted':
+        return PrinterMultiIntersectionWeighted(
+            PrinterLSS(cfg['MonoLSS'], build_model(cfg['MonoLSS'])), 
+            PrinterDTR(cfg['MonoDTR'], build_model(cfg['MonoDTR'])),
+        )
+    elif type == 'multi-union-weighted':
+        return PrinterMultiUnionWeighted(
             PrinterLSS(cfg['MonoLSS'], build_model(cfg['MonoLSS'])), 
             PrinterDTR(cfg['MonoDTR'], build_model(cfg['MonoDTR'])),
         )

@@ -1,21 +1,21 @@
 dataset:
   type: 'kitti'
-  data_dir: 'zdata/KITTI/object/'
+  data_dir: 'zdata/custom/merged/'
   root_dir: '/home/akos/Documents/code/MonoDetectors'
-  label_dir: 'zdata/KITTI/object/training/label_2'
+  label_dir: 'zdata/custom/merged/training/label_2'
   eval_cls: ['Car']
 
 tester:
   log_dir: 'results/logs/'
   out_dir: 'results/output/'
 
-type: 'multi-intersect-weighted' # MonoLSS, MonoDTR, multi-intersect, multi-union, multi-intersect-weighted, multi-union-weighted
+type: 'MonoDTR' # MonoLSS, MonoDTR, multi-intersect, multi-union, multi-weighted
 MonoLSS:
-  type: 'MonoLSS'
+  resume_model: './checkpoints/monolss-tester2-on-sim.pth' # pre-trained model path
   threshold: 0.2
+  type: 'MonoLSS'
   backbone: 'dla34'
   neck: 'DLAUp'
-  resume_model: './checkpoints/monolss.pth' # pre-trained model path
   cls: ['Car','Pedestrian','Cyclist']
   resolution: [1280, 384]
   max_objs: 50
@@ -26,9 +26,9 @@ MonoLSS:
 
 
 MonoDTR:
-  type: 'MonoDTR'
+  resume_model: './checkpoints/MonoDTR-tester-sim.pth' # pre-trained model path
   threshold: 0.8
-  resume_model: './checkpoints/MonoDTR.pth' # pre-trained model path
+  type: 'MonoDTR'
   head:
     cls: ['Car']
     num_regression_loss_terms: 12
