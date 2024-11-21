@@ -12,6 +12,8 @@ calib.txt
 /MonoDTR/
 **/__pycache__/
 
+/services/*_pb2*
+
 *.so
 *.npy
 *.pth
