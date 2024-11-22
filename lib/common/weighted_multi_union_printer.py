@@ -17,7 +17,7 @@ class Printer(object):
             resultsLSS.append(predsLSS[lss_idx])
             resultsDTR.append(predsDTR[dtr_idx])
 
-        averaged_list = average_lists(resultsLSS, resultsDTR, 15, 0.3)
+        averaged_list = average_lists(resultsLSS, resultsDTR, 20, 0.3)
 
         used_dtr = {pair[0] for pair in index_pairs}
         used_lss = {pair[1] for pair in index_pairs}
